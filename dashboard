@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Productivity Dashboard</title>
+    <!-- Using Inter for a modern UI -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General & Root Styles --- */
+        :root {
+            --bg-color: #0f1720; /* darker navy */
+            --card-bg: rgba(255,255,255,0.03);
+            --glass-bg: rgba(255,255,255,0.03);
+            --text-color: #e6eef8;
+            --text-muted: #9fb0c8;
+            --border-color: rgba(255,255,255,0.06);
+
+            --work-color: #4f8ef7;      /* Blue */
+            --wellbeing-color: #39d8b2; /* Teal */
+            --learning-color: #ffb46b;  /* Warm orange */
+
+            --font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+            --border-radius: 12px;
+            --shadow: 0 10px 30px rgba(2,6,23,0.6);
+            --glass-blur: 8px;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: radial-gradient(1200px 600px at 10% 10%, rgba(79,142,247,0.06), transparent),
+                        radial-gradient(1000px 500px at 90% 90%, rgba(255,180,107,0.03), transparent),
+                        var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 3rem 2rem;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- Main App Container --- */
+        #app {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            transform: translateZ(0); /* enable GPU compositing for smoother animations */
+        }
+
+        /* --- Header --- */
+        header {
+            text-align: center;
+            padding: 1.25rem 1rem;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(var(--glass-blur));
+            box-shadow: var(--shadow);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        header #quote {
+            font-style: italic;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-size: 0.98rem;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* --- Main Content Layout --- */
+        main {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* --- Category Cards --- */
+        .category-card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            border-radius: var(--border-radius);
+            padding: 1.35rem;
+            box-shadow: 0 8px 24px rgba(2,6,23,0.55);
+            border: 1px solid var(--border-color);
+            border-top: 6px solid rgba(255,255,255,0.02);
+            display: flex;
+            flex-direction: column;
+            min-height: 260px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 220ms ease, box-shadow 220ms ease;
+        }
+
+        .category-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 40px rgba(2,6,23,0.6);
+        }
+
+        #work { border-color: var(--work-color); }
+        #wellbeing { border-color: var(--wellbeing-color); }
+        #learning { border-color: var(--learning-color); }
+
+        .category-card h2 {
+            margin-top: 0;
+            font-size: 1.15rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* --- Progress Bar --- */
+        .progress-bar-container {
+            width: 100%;
+            background-color: rgba(255,255,255,0.03);
+            border-radius: 999px;
+            margin-bottom: 1.25rem;
+            height: 16px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .progress-bar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            border-radius: 999px;
+            transition: width 520ms cubic-bezier(.2,.9,.2,1);
+            box-shadow: 0 6px 18px rgba(2,6,23,0.45) inset;
+        }
+        
+        #work .progress-bar { background: linear-gradient(90deg, var(--work-color), rgba(79,142,247,0.7)); }
+        #wellbeing .progress-bar { background: linear-gradient(90deg, var(--wellbeing-color), rgba(57,216,178,0.8)); }
+        #learning .progress-bar { background: linear-gradient(90deg, var(--learning-color), rgba(255,180,107,0.85)); }
+
+        .progress-text {
+            position: relative;
+            margin-left: auto;
+            margin-right: 0.5rem;
+            z-index: 1;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 0.85rem;
+        }
+
+        /* --- Input Form --- */
+        .add-goal-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            align-items: stretch;
+        }
+
+        .add-goal-form input[type="text"] {
+            flex-grow: 1;
+            padding: 0.7rem 0.9rem;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.02);
+            color: var(--text-color);
+            font-size: 0.97rem;
+            transition: box-shadow 160ms, transform 120ms;
+        }
+
+        .add-goal-form input[type="text"]:focus {
+            outline: none;
+            box-shadow: 0 6px 20px rgba(2,6,23,0.45);
+            transform: translateY(-1px);
+        }
+        #work .add-goal-form input[type="text"]:focus { box-shadow: 0 6px 24px rgba(79,142,247,0.08); }
+        #wellbeing .add-goal-form input[type="text"]:focus { box-shadow: 0 6px 24px rgba(57,216,178,0.06); }
+        #learning .add-goal-form input[type="text"]:focus { box-shadow: 0 6px 24px rgba(255,180,107,0.06); }
+
+        .add-goal-form button {
+            padding: 0 14px;
+            min-width: 68px;
+            border: none;
+            border-radius: 10px;
+            color: #07203a;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 140ms ease, box-shadow 140ms ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .add-goal-form button:hover { transform: translateY(-3px); }
+        #work .add-goal-form button { background: linear-gradient(180deg,var(--work-color), #2f6fe6); color: white; }
+        #wellbeing .add-goal-form button { background: linear-gradient(180deg,var(--wellbeing-color), #2fbf9a); color: #022a22; }
+        #learning .add-goal-form button { background: linear-gradient(180deg,var(--learning-color), #ff9b3a); color: #2a1606; }
+        
+        /* --- Goal List --- */
+        .goal-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1; /* Allows list to fill space */
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .goal-list li {
+            display: flex;
+            align-items: center;
+            padding: 0.65rem 0.6rem;
+            border-radius: 8px;
+            transition: background-color 160ms, transform 200ms;
+            background: transparent;
+        }
+
+        .goal-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .goal-list li:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+            transform: translateY(-3px);
+        }
+
+        .goal-list li.completed .goal-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+            opacity: 0.9;
+        }
+
+        .goal-list input[type="checkbox"] {
+            margin-right: 0.9rem;
+            min-width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--work-color);
+            transform: translateY(-1px);
+        }
+        #wellbeing .goal-list input[type="checkbox"] { accent-color: var(--wellbeing-color); }
+        #learning .goal-list input[type="checkbox"] { accent-color: var(--learning-color); }
+
+        .goal-text {
+            flex-grow: 1;
+            word-break: break-word;
+            color: var(--text-color);
+            font-size: 0.98rem;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0 0.5rem;
+            line-height: 1;
+            transition: color 140ms, transform 140ms;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .delete-btn:hover {
+            color: #ff7a7a; /* softer red */
+            transform: scale(1.06);
+        }
+
+        /* small utility */
+        .muted { color: var(--text-muted); font-size: 0.86rem }
+
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <header>
+            <h1>My Daily Dashboard</h1>
+            <p id="quote"></p>
+        </header>
+        <main>
+            <section id="work" class="category-card">
+                <h2>🏢 Work</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar"></div>
+                    <span class="progress-text">0%</span>
+                </div>
+                <form class="add-goal-form">
+                    <input type="text" placeholder="Add a new work goal..." required>
+                    <button type="submit">Add</button>
+                </form>
+                <ul class="goal-list"></ul>
+            </section>
+
+            <section id="wellbeing" class="category-card">
+                <h2>🧘 Wellbeing</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar"></div>
+                    <span class="progress-text">0%</span>
+                </div>
+                <form class="add-goal-form">
+                    <input type="text" placeholder="Add a wellbeing habit..." required>
+                    <button type="submit">Add</button>
+                </form>
+                <ul class="goal-list"></ul>
+            </section>
+
+            <section id="learning" class="category-card">
+                <h2>📚 Learning</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar"></div>
+                    <span class="progress-text">0%</span>
+                </div>
+                <form class="add-goal-form">
+                    <input type="text" placeholder="Add a learning task..." required>
+                    <button type="submit">Add</button>
+                </form>
+                <ul class="goal-list"></ul>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA ---
+            const quotes = [
+                "The secret of getting ahead is getting started.",
+                "Well done is better than well said.",
+                "You don't have to be great to start, but you have to start to be great.",
+                "A year from now you may wish you had started today.",
+                "The future depends on what you do today."
+            ];
+
+            let state = {
+                goals: {
+                    work: [],
+                    wellbeing: [],
+                    learning: []
+                }
+            };
+            
+            // --- DOM Elements ---
+            const quoteElement = document.getElementById('quote');
+            const mainElement = document.querySelector('main');
+            const forms = document.querySelectorAll('.add-goal-form');
+
+            // --- FUNCTIONS ---
+            
+            /**
+             * Saves the current state to localStorage.
+             */
+            const saveState = () => {
+                localStorage.setItem('dashboardState', JSON.stringify(state));
+            };
+
+            /**
+             * Loads state from localStorage or initializes with defaults.
+             */
+            const loadState = () => {
+                const savedState = localStorage.getItem('dashboardState');
+                if (savedState) {
+                    state = JSON.parse(savedState);
+                } else {
+                    // Add some default goals for first-time users
+                    state.goals.work = [{ text: "Plan tomorrow's schedule", completed: false }];
+                    state.goals.wellbeing = [{ text: "Meditate for 10 minutes", completed: true }, {text: "Go for a 30-minute walk", completed: false}];
+                    state.goals.learning = [{ text: "Read one chapter of a book", completed: false }];
+                }
+            };
+
+            /**
+             * Renders all goals for a specific category.
+             * @param {string} category - The category to render (e.g., 'work').
+             */
+            const renderCategory = (category) => {
+                const categoryData = state.goals[category] || [];
+                const goalList = document.querySelector(`#${category} .goal-list`);
+                // Use DOM diff: clear and re-add with subtle entry animation
+                goalList.innerHTML = ''; // reset
+
+                if (categoryData.length === 0) {
+                    const li = document.createElement('li');
+                    li.className = 'muted';
+                    li.textContent = 'No goals yet. Add one above ✨';
+                    goalList.appendChild(li);
+                } else {
+                    categoryData.forEach((goal, index) => {
+                        const li = document.createElement('li');
+                        li.className = goal.completed ? 'completed' : '';
+                        li.dataset.category = category;
+                        li.dataset.index = index;
+
+                        li.innerHTML = `
+                            <input type="checkbox" class="goal-checkbox" ${goal.completed ? 'checked' : ''} aria-label="Toggle goal completion">
+                            <span class="goal-text">${escapeHtml(goal.text)}</span>
+                            <button class="delete-btn" title="Delete goal" aria-label="Delete goal">&times;</button>
+                        `;
+
+                        // entry animation
+                        li.style.opacity = '0';
+                        li.style.transform = 'translateY(6px)';
+                        goalList.appendChild(li);
+                        requestAnimationFrame(() => {
+                            li.style.transition = 'opacity 340ms ease, transform 340ms ease';
+                            li.style.opacity = '1';
+                            li.style.transform = 'translateY(0)';
+                        });
+                    });
+                }
+                updateProgressBar(category);
+            };
+            
+            /**
+             * Updates the progress bar for a specific category.
+             * @param {string} category - The category to update.
+             */
+            const updateProgressBar = (category) => {
+                const goals = state.goals[category];
+                const progressBar = document.querySelector(`#${category} .progress-bar`);
+                const progressText = document.querySelector(`#${category} .progress-text`);
+
+                if (goals.length === 0) {
+                    progressBar.style.width = '0%';
+                    progressText.textContent = 'N/A';
+                    return;
+                }
+
+                const completedCount = goals.filter(g => g.completed).length;
+                const percentage = Math.round((completedCount / goals.length) * 100);
+
+                // Smoothly animate to the new width
+                const prevWidth = parseFloat(progressBar.style.width) || 0;
+                progressBar.style.width = `${percentage}%`;
+                progressText.textContent = `${percentage}%`;
+
+                // subtle pulse when progress increases
+                if (percentage > prevWidth) {
+                    progressBar.animate([
+                        { boxShadow: '0 6px 18px rgba(2,6,23,0.45) inset' },
+                        { boxShadow: '0 10px 36px rgba(2,6,23,0.55) inset' },
+                        { boxShadow: '0 6px 18px rgba(2,6,23,0.45) inset' }
+                    ], { duration: 500 });
+                }
+            };
+
+            /**
+             * Renders the entire dashboard UI.
+             */
+            const render = () => {
+                Object.keys(state.goals).forEach(category => {
+                    renderCategory(category);
+                });
+            };
+
+            /**
+             * Adds a new goal to a category.
+             * @param {string} category - The target category.
+             * @param {string} text - The goal's text content.
+             */
+            const addGoal = (category, text) => {
+                if (text.trim()) {
+                    state.goals[category].push({ text, completed: false });
+                    saveState();
+                    renderCategory(category);
+                }
+            };
+            
+            /**
+             * Handles clicks within the main content area (event delegation).
+             * @param {Event} e - The click event.
+             */
+            const handleMainClick = (e) => {
+                const target = e.target;
+                const li = target.closest('li');
+                if (!li) return;
+
+                const { category, index } = li.dataset;
+                
+                // Toggle completion
+                if (target.classList.contains('goal-checkbox')) {
+                    state.goals[category][index].completed = target.checked;
+                    saveState();
+                    renderCategory(category); // Re-render for style updates
+                }
+
+                // Delete goal with exit animation
+                if (target.classList.contains('delete-btn')) {
+                    const removed = state.goals[category].splice(index, 1);
+                    saveState();
+
+                    // animate removal
+                    li.style.transition = 'opacity 260ms ease, transform 260ms ease';
+                    li.style.opacity = '0';
+                    li.style.transform = 'translateX(12px)';
+                    setTimeout(() => renderCategory(category), 280);
+                }
+            };
+            
+            /**
+             * Handles form submissions to add new goals.
+             * @param {Event} e - The submit event.
+             */
+            const handleFormSubmit = (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const input = form.querySelector('input[type="text"]');
+                const category = form.closest('.category-card').id;
+                addGoal(category, input.value);
+                form.reset();
+                input.blur();
+            };
+
+            /**
+             * Displays a random motivational quote.
+             */
+            const displayQuote = () => {
+                // Use day of the year to get a consistent daily quote
+                const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+                const quoteIndex = dayOfYear % quotes.length;
+                quoteElement.textContent = `"${quotes[quoteIndex]}"`;
+            };
+
+            // tiny utility to avoid injecting raw HTML when rendering user text
+            const escapeHtml = (str) => {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            };
+
+            // --- INITIALIZATION ---
+            
+            // Set up event listeners
+            mainElement.addEventListener('click', handleMainClick);
+            forms.forEach(form => form.addEventListener('submit', handleFormSubmit));
+            
+            // Initial render
+            displayQuote();
+            loadState();
+            render();
+        });
+    </script>
+</body>
+</html>
